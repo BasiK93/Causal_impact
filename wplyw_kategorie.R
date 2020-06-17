@@ -29,17 +29,18 @@ miejsce$Rok<-as.Date(as.character(miejsce$Rok), format="%Y")
 miejsce$Niemcy<-panstwa$Niemcy[33:50]
 miejsce$Slowacja<-panstwa$S³owacja[33:50]
 miejsce$Czechy<-panstwa$Czechy[33:50]
-miejsce_xts <-
-  miejsce %>%
+miejsce1<-subset(miejsce, select=-c(wies))
+miejsce1_xts <-
+  miejsce1 %>%
   dplyr::select(-Rok) %>%
   as.xts(order.by = miejsce$Rok)
 
-miejsce_causal <- CausalImpact(miejsce_xts, 
-                            pre.period = as.Date(c("2002-06-13", "2015-06-13")), 
-                            post.period = as.Date(c("2016-06-13", "2019-06-13")))
-miasto<-round(miejsce_causal$summary[1,1]/miejsce_causal$summary[1,2]*100-100)
+miejsce1_causal <- CausalImpact(miejsce1_xts, 
+                                pre.period = as.Date(c("2002-06-17", "2015-06-17")), 
+                                post.period = as.Date(c("2016-06-17", "2019-06-17")))
+miasto<-round(miejsce1_causal$summary[1,1]/miejsce1_causal$summary[1,2]*100-100)
 
-miejsce2<-data.frame(Rok=miejsce$Rok, wies=miejsce$wies, miasto=miejsce$miasto, Niemcy=panstwa$Niemcy[33:50], S³owacja=panstwa$S³owacja[33:50], Czechy=panstwa$Czechy[33:50])
+miejsce2<-data.frame(Rok=miejsce$Rok, wies=miejsce$wies, Niemcy=panstwa$Niemcy[33:50], S³owacja=panstwa$S³owacja[33:50], Czechy=panstwa$Czechy[33:50])
 miejsce2$Rok<-as.Date(as.character(miejsce$Rok), format="%Y")
 
 miejsce2_xts <-
@@ -48,10 +49,10 @@ miejsce2_xts <-
   as.xts(order.by = miejsce2$Rok)
 
 miejsce2_causal <- CausalImpact(miejsce2_xts, 
-                               pre.period = as.Date(c("2002-06-13", "2015-06-13")), 
-                               post.period = as.Date(c("2016-06-13", "2019-06-13")))
+                                pre.period = as.Date(c("2002-06-17", "2015-06-17")), 
+                                post.period = as.Date(c("2016-06-17", "2019-06-17")))
 wies<-round(miejsce2_causal$summary[1,1]/miejsce2_causal$summary[1,2]*100-100)
-                    
+
 nowy<-data.frame(zmiana=c(0), gdzie=c("miasto", "wies"))
 nowy$zmiana[1]<-miasto
 nowy$zmiana[2]<-wies
@@ -61,28 +62,28 @@ ggplot(nowy, aes(x = gdzie, y = zmiana)) +
   ylim(-2,2)
 
 #wiek matki
-wiek$Rok<-as.Date(as.character(wiek$Rok), format="%Y")
-nowy2<-data.frame(wiek=c('wiek1','wiek2','wiek3','wiek4','wiek5','wiek6','wiek7'), zmiana=c(0))
-
-for ( i in 2:8){
+nowy2<-data.frame(wiek=c('wiek1','wiek2','wiek3','wiek4','wiek5','wiek6','wiek7'), zmiana=c(0), p=c(0))
+zbior1<-subset(dane, select=c(Rok, Niemcy, Czechy, S³owacja))
+zbior1<-zbior1[33:50,]
+zbior1$Rok<-as.Date(as.character(zbior1$Rok), format="%Y")
+for (i in 2:8){
   a<-paste("wiek", i-1, sep="")
   wiekx<-wiek[i]
-  zbior<-subset(wiek, select=-c(get(a)))
-  wiek2<-cbind(wiekx, zbior)
+  wiek2<-cbind(wiekx, zbior1)
   wiek2_xts <-
     wiek2 %>%
     dplyr::select(-Rok) %>%
     as.xts(order.by = wiek2$Rok)
   wiek2_causal <- CausalImpact(wiek2_xts, 
-                              pre.period = as.Date(c("2002-06-13", "2015-06-13")), 
-                              post.period = as.Date(c("2016-06-13", "2019-06-13")))
+                               pre.period = as.Date(c("2002-06-17", "2015-06-17")), 
+                               post.period = as.Date(c("2016-06-17", "2019-06-17")))
   nowy2$zmiana[i-1]<-round(wiek2_causal$summary[1,1]/wiek2_causal$summary[1,2]*100-100)
+  nowy2$p[i-1]<-wiek2_causal$summary[1,15]
 }
 
 ggplot(nowy2, aes(x = wiek, y = zmiana)) +
   geom_bar(stat = "identity", fill="darkorange")+
   ylab("%")+
-  ylim(-30,30)+
   scale_x_discrete(labels= c("19 i mniej", "20-24 lat", "25-29 lat", "30-34", "35-39", "40-44", "45 i wiêcej"))+
   ggtitle("Zmiana liczby urodzeñ wzglêdem wieku matki")+
   theme_minimal()
@@ -102,20 +103,19 @@ wojew_df <- left_join(wojew_df, wojew_nazwy, by=c("id"="JPT_KOD_JE"))
 #statystyki
 wojewodztwo$Rok<-as.Date(as.character(wojewodztwo$Rok), format="%Y")
 lista<-colnames(wojewodztwo[2:17])
-nowy3<-data.frame(wiek=lista, zmiana=c(0))
+nowy3<-data.frame(wojewodztwo=lista, zmiana=c(0))
 
 for ( i in 1:16){
   a<-lista[i]
   woj<-wojewodztwo[i+1]
-  zbior<-subset(wojewodztwo, select=-c(get(a)))
-  woj2<-cbind(woj, zbior)
+  woj2<-cbind(woj, zbior1)
   woj2_xts <-
     woj2 %>%
     dplyr::select(-Rok) %>%
     as.xts(order.by = woj2$Rok)
   woj2_causal <- CausalImpact(woj2_xts, 
-                               pre.period = as.Date(c("2002-06-14", "2015-06-14")), 
-                               post.period = as.Date(c("2016-06-14", "2019-06-14")))
+                              pre.period = as.Date(c("2002-06-17", "2015-06-17")), 
+                              post.period = as.Date(c("2016-06-17", "2019-06-17")))
   nowy3$zmiana[i]<-round(woj2_causal$summary[1,1]/woj2_causal$summary[1,2]*100-100)
 }
 
